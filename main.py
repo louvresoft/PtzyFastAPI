@@ -1,15 +1,24 @@
 # Python
 
 from typing import Optional
+from enum import Enum
 
 # Pydantic
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # FastAPI
 from fastapi import FastAPI
 from fastapi import Body, Query, Path
 
 app = FastAPI()
+
+
+class HairColor(Enum):
+    white = "white"
+    brown = "brown"
+    black = "black"
+    blonde = "blonde"
+    red = "red"
 
 
 class Location(BaseModel):
@@ -20,11 +29,12 @@ class Location(BaseModel):
 
 # Models
 class Person(BaseModel):
-    first_name: str
-    last_name: str
-    age: int
-    hair_color: Optional[str] = None
-    is_married: Optional[bool] = None
+    """ Field(...)  es para declarar el campo como obligatorio"""
+    first_name: str = Field(..., min_length=1, max_length=50)
+    last_name: str = Field(..., min_length=1, max_length=40)
+    age: int = Field(..., gt=0, le=115)
+    hair_color: Optional[HairColor] = Field(default=None)
+    is_married: Optional[bool] = Field(default=None)
 
 
 @app.get("/")
