@@ -67,14 +67,26 @@ def home():
     response_model=Person,
     response_model_exclude={"password"},
     status_code=status.HTTP_201_CREATED,
-    tags=["Persons"]
+    tags=["Persons"],
 )
 def create_person(person: Person = Body(...)):
+    """
+    Crear Persona
+
+    Esta path operation cra una persona en la app y guarda la informacion en la base de datos
+
+    Parameters:
+    - Request body parameter:
+        - **person: Person** -> Modelo de una persona con el primer nombre, segundo nombre,
+        apellido, edad, color de pelo y estatus civil.
+    Returns
+    retorna un modelo de persona con su primer nombre, apellidos, edad, color de pelo y estado civil
+    """
     return person
 
 
 # Validaciones: Query Parameters
-@app.get(path="/person/detail", status_code=status.HTTP_200_OK, tags=["Persons"])
+@app.get(path="/person/detail", status_code=status.HTTP_200_OK, tags=["Persons"], summary="Crear persona en la app")
 def show_person(
     name: Optional[str] = Query(
         None,
@@ -96,10 +108,7 @@ persons = [1, 2, 3, 4, 5]
 def show_person(person_id: int = Path(..., gt=0)):
     """Path(...) 3 puntos para inticar que el parametro es obligatorio"""
     if person_id not in persons:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Esta persona no existe!"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Esta persona no existe!")
     return {person_id: "Si existe!"}
 
 
