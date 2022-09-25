@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, EmailStr
 # FastAPI
 from fastapi import FastAPI, Header, Cookie, UploadFile, File
 from fastapi import Body, Query, Path, Form, status
+from fastapi import HTTPException
 
 app = FastAPI()
 
@@ -66,13 +67,14 @@ def home():
     response_model=Person,
     response_model_exclude={"password"},
     status_code=status.HTTP_201_CREATED,
+    tags=["Persons"]
 )
 def create_person(person: Person = Body(...)):
     return person
 
 
 # Validaciones: Query Parameters
-@app.get(path="/person/detail", status_code=status.HTTP_200_OK)
+@app.get(path="/person/detail", status_code=status.HTTP_200_OK, tags=["Persons"])
 def show_person(
     name: Optional[str] = Query(
         None,
@@ -86,15 +88,23 @@ def show_person(
     return {name: age}
 
 
+persons = [1, 2, 3, 4, 5]
+
+
 # Validaciones: Path Parameters
-@app.get("/person/detail/{person_id}")
+@app.get(path="/person/detail/{person_id}", tags=["Persons"])
 def show_person(person_id: int = Path(..., gt=0)):
     """Path(...) 3 puntos para inticar que el parametro es obligatorio"""
-    return {person_id: "It exists!"}
+    if person_id not in persons:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Esta persona no existe!"
+        )
+    return {person_id: "Si existe!"}
 
 
 # Validaciones: Request Body
-@app.put("/person/{person_id}")
+@app.put(path="/person/{person_id}", tags=["Persons"])
 def update_person(
     person_id: int = Path(..., title="Person ID", description="This is the person ID", gt=0),
     person: Person = Body(...),
@@ -105,42 +115,29 @@ def update_person(
 
     return person
 
-@app.post(
-    path="/login",
-    response_model=LoginOut,
-    status_code=status.HTTP_200_OK
-)
+
+@app.post(path="/login", response_model=LoginOut, status_code=status.HTTP_200_OK, tags=["Auth"])
 def login(username: str = Form(...), password: str = Form(...)):
     return LoginOut(username=username)
 
 
 @app.post(path="/contact", status_code=status.HTTP_200_OK)
 def contact(
-        first_name: str = Form(
-            ...,
-            max_length=20,
-            min_length=1
-        ),
-        last_name: str = Form(
-            ...,
-            max_length=20,
-            min_length=1
-        ),
-        email: EmailStr = Form(...),
-        message: str = Form(..., min_length=20),
-        user_agent: Optional[str] = Header(default=None),
-        ads: Optional[str] = Cookie(default=None)
+    first_name: str = Form(..., max_length=20, min_length=1),
+    last_name: str = Form(..., max_length=20, min_length=1),
+    email: EmailStr = Form(...),
+    message: str = Form(..., min_length=20),
+    user_agent: Optional[str] = Header(default=None),
+    ads: Optional[str] = Cookie(default=None),
 ):
     return user_agent
 
 
 # Files
 @app.post(path="/post-image")
-def post_image(
-        image: UploadFile = File(...)
-):
+def post_image(image: UploadFile = File(...)):
     return {
         "Filename": image.filename,
         "Format": image.content_type,
-        "Size(kb)": round(len(image.file.read())/1024, ndigits=2)
+        "Size(kb)": round(len(image.file.read()) / 1024, ndigits=2),
     }
