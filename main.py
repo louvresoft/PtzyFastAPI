@@ -35,6 +35,7 @@ class Person(BaseModel):
     age: int = Field(..., gt=0, le=115)
     hair_color: Optional[HairColor] = Field(default=None)
     is_married: Optional[bool] = Field(default=None)
+    password: str = Field(..., min_length=8)
 
     # class Config:
     #     schema_extra = {
