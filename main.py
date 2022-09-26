@@ -1,111 +1,182 @@
 # Python
+import json
 from uuid import UUID
-from datetime import date, datetime
+from datetime import date
+from datetime import datetime
 from typing import Optional, List
-from http import HTTPStatus
 
 # Pydantic
 from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic import Field
 
-# Fast API
+# FastAPI
 from fastapi import FastAPI
+from fastapi import status
+from fastapi import Body
 
 app = FastAPI()
 
 
-# Modelos
+# Models
+
 class UserBase(BaseModel):
     user_id: UUID = Field(...)
     email: EmailStr = Field(...)
 
 
 class UserLogin(UserBase):
-    password: str = Field(..., min_length=8, max_length=64)
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=64
+    )
 
 
 class User(UserBase):
-    nombre: str = Field(..., min_length=1, max_length=50)
-    apellido_paterno: str = Field(..., min_length=1, max_length=50)
-    fecha_nacimiento: Optional[date] = Field(default=None)
+    first_name: str = Field(
+        ...,
+        min_length=1,
+        max_length=50
+    )
+    last_name: str = Field(
+        ...,
+        min_length=1,
+        max_length=50
+    )
+    birth_date: Optional[date] = Field(default=None)
+
+
+class UserRegister(User):
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=64
+    )
 
 
 class Tweet(BaseModel):
     tweet_id: UUID = Field(...)
-    content: str = Field(..., min_length=1, max_length=256)
+    content: str = Field(
+        ...,
+        min_length=1,
+        max_length=256
+    )
     created_at: datetime = Field(default=datetime.now())
-    update_at: Optional[datetime] = Field(default=None)
+    updated_at: Optional[datetime] = Field(default=None)
     by: User = Field(...)
 
 
-# Path Operation
-
-
-
+# Path Operations
 
 ## Users
+
+### Register a user
 @app.post(
-    path="/signip",
+    path="/signup",
     response_model=User,
-    status_code=HTTPStatus.CREATED,
-    summary="RTegister a user",
-    tags=["Users"],
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a User",
+    tags=["Users"]
 )
-def signup():
-    pass
+def signup(user: UserRegister = Body(...)):
+    """
+    Signup
+
+    This path operation register a user in the app
+
+    Parameters:
+        - Request body parameter
+            - user: UserRegister
+
+    Returns a json with the basic user information:
+        - user_id: UUID
+        - email: Emailstr
+        - first_name: str
+        - last_name: str
+        - birth_date: datetime
+    """
+    with open("users.json", "r+", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        user_dict = user.dict()
+        user_dict["user_id"] = str(user_dict["user_id"])
+        user_dict["birth_date"] = str(user_dict["birth_date"])
+        results.append(user_dict)
+        f.seek(0)
+        f.write(json.dumps(results))
+        return user
 
 
+### Login a user
 @app.post(
     path="/login",
     response_model=User,
-    status_code=HTTPStatus.OK,
-    summary="Loguear un usuario",
-    tags=["Users"],
+    status_code=status.HTTP_200_OK,
+    summary="Login a User",
+    tags=["Users"]
 )
 def login():
     pass
 
 
+### Show all users
 @app.get(
     path="/users",
     response_model=List[User],
-    status_code=HTTPStatus.OK,
-    summary="Muestra todos los usuarios",
-    tags=["Users"],
+    status_code=status.HTTP_200_OK,
+    summary="Show all users",
+    tags=["Users"]
 )
 def show_all_users():
-    pass
+    """
+    This path operation shows all users in the app
+
+    Parameters:
+        -
+
+    Returns a json list with all users in the app, with the following keys:
+        - user_id: UUID
+        - email: Emailstr
+        - first_name: str
+        - last_name: str
+        - birth_date: datetime
+    """
+    with open("users.json", "r", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        return results
 
 
+### Show a user
 @app.get(
     path="/users/{user_id}",
     response_model=User,
-    status_code=HTTPStatus.OK,
-    summary="Show a user",
-    tags=["Users"],
+    status_code=status.HTTP_200_OK,
+    summary="Show a User",
+    tags=["Users"]
 )
 def show_a_user():
     pass
 
 
+### Delete a user
 @app.delete(
     path="/users/{user_id}/delete",
     response_model=User,
-    status_code=HTTPStatus.OK,
-    summary="Delete a user",
-    tags=["Users"],
+    status_code=status.HTTP_200_OK,
+    summary="Delete a User",
+    tags=["Users"]
 )
 def delete_a_user():
     pass
 
 
+### Update a user
 @app.put(
     path="/users/{user_id}/update",
     response_model=User,
-    status_code=HTTPStatus.OK,
-    summary="Update a user",
-    tags=["Users"],
+    status_code=status.HTTP_200_OK,
+    summary="Update a User",
+    tags=["Users"]
 )
 def update_a_user():
     pass
@@ -113,61 +184,89 @@ def update_a_user():
 
 ## Tweets
 
+### Show  all tweets
 @app.get(
     path="/",
     response_model=List[Tweet],
-    status_code=HTTPStatus.OK,
-    summary="Muestra todos los tweets",
+    status_code=status.HTTP_200_OK,
+    summary="Show all tweets",
     tags=["Tweets"]
 )
 def home():
-    """ Muestra todos los tweets """
-    return {"Twitter API": "Working"}
+    return {"Twitter API": "Working!"}
 
 
-@app.get(
+### Post a tweet
+@app.post(
     path="/post",
     response_model=Tweet,
-    status_code=HTTPStatus.CREATED,
-    summary="Postea un tweet",
+    status_code=status.HTTP_201_CREATED,
+    summary="Post a tweet",
     tags=["Tweets"]
 )
-def post():
-    """ Postea un tweet"""
-    return {"Twitter API": "Working"}
+def post(tweet: Tweet = Body(...)):
+    """
+    Post a Tweet
+
+    This path operation post a tweet in the app
+
+    Parameters:
+        - Request body parameter
+            - tweet: Tweet
+
+    Returns a json with the basic tweet information:
+        tweet_id: UUID
+        content: str
+        created_at: datetime
+        updated_at: Optional[datetime]
+        by: User
+    """
+    with open("tweets.json", "r+", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        tweet_dict = tweet.dict()
+        tweet_dict["tweet_id"] = str(tweet_dict["tweet_id"])
+        tweet_dict["created_at"] = str(tweet_dict["created_at"])
+        tweet_dict["updated_at"] = str(tweet_dict["updated_at"])
+        tweet_dict["by"]["user_id"] = str(tweet_dict["by"]["user_id"])
+        tweet_dict["by"]["birth_date"] = str(tweet_dict["by"]["birth_date"])
+
+        results.append(tweet_dict)
+        f.seek(0)
+        f.write(json.dumps(results))
+        return tweet
 
 
+### Show a tweet
 @app.get(
     path="/tweets/{tweet_id}",
     response_model=Tweet,
-    status_code=HTTPStatus.OK,
-    summary="Postea un tweet",
+    status_code=status.HTTP_200_OK,
+    summary="Show a tweet",
     tags=["Tweets"]
 )
 def show_a_tweet():
-    """ Muestra un tweet """
-    return {"Twitter API": "Working"}
+    pass
 
 
+### Delete a tweet
 @app.delete(
     path="/tweets/{tweet_id}/delete",
     response_model=Tweet,
-    status_code=HTTPStatus.OK,
-    summary="Elimina un tweet",
+    status_code=status.HTTP_200_OK,
+    summary="Delete a tweet",
     tags=["Tweets"]
 )
-def elimina_un_tweet():
-    """ Elimina un tweet """
-    return {"Twitter API": "Working"}
+def delete_a_tweet():
+    pass
 
 
+### Update a tweet
 @app.put(
     path="/tweets/{tweet_id}/update",
     response_model=Tweet,
-    status_code=HTTPStatus.OK,
-    summary="Actualiza un tweet",
+    status_code=status.HTTP_200_OK,
+    summary="Update a tweet",
     tags=["Tweets"]
 )
-def elimina_un_tweet():
-    """ Actualiza un tweet """
-    return {"Twitter API": "Working"}
+def update_a_tweet():
+    pass
